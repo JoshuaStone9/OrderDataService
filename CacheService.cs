@@ -78,7 +78,6 @@ public static void PrintCacheCounts(Cache cache)
             return;
         }
 
-        // Repeat-friendly: prevent duplicates by email
         if (repo.CustomerExistsByEmail(email))
         {
             Console.WriteLine("A customer with that email already exists.");
@@ -87,14 +86,11 @@ public static void PrintCacheCounts(Cache cache)
 
         int newId = repo.AddCustomer(name, email);
 
-        // Boolean check in DB
         bool existsInDb = repo.CustomerExistsById(newId);
 
-        // Update cache
         cache.CustomersById[newId] = new Customer { CustomerId = newId, Name = name, Email = email };
         cache.CustomersByEmail[email] = cache.CustomersById[newId];
 
-        // Boolean check in cache
         bool existsInCache = cache.CustomersById.ContainsKey(newId);
 
         Console.WriteLine($"Customer added. Id={newId}");
@@ -142,8 +138,6 @@ public static void PrintCacheCounts(Cache cache)
             return;
         }
 
-        // You can still allow item add even if order not in cache yet,
-        // but for this boilerplate we verify order exists in DB.
         if (!repo.OrderExists(orderId))
         {
             Console.WriteLine("Order not found in DB.");
@@ -169,7 +163,6 @@ public static void PrintCacheCounts(Cache cache)
 
         int itemId = repo.AddOrderItem(orderId, product, qty, price);
 
-        // Update cache
         if (!cache.ItemsByOrderId.ContainsKey(orderId))
             cache.ItemsByOrderId[orderId] = new List<OrderItem>();
 
@@ -211,7 +204,6 @@ public static void PrintCacheCounts(Cache cache)
             return;
         }
 
-        // Sort by date (uses list features)
         orders.Sort((a, b) => a.OrderDate.CompareTo(b.OrderDate));
 
         foreach (var o in orders)
@@ -241,12 +233,10 @@ public static void PrintCacheCounts(Cache cache)
             return;
         }
 
-        // Collect all orders from dictionary values into one list
         var allOrders = new List<Order>();
         foreach (var kv in cache.OrdersByCustomerId)
             allOrders.AddRange(kv.Value);
 
-        // FindAll with lambda
         var filtered = allOrders.FindAll(o => o.OrderDate > date);
 
         bool foundAny = filtered.Count > 0;
@@ -280,17 +270,12 @@ public static void PrintCacheCounts(Cache cache)
             return;
         }
 
-        // Delete in DB
         bool deletedInDb = repo.DeleteCustomer(customerId);
 
-        // Boolean check: should NOT exist after delete
         bool stillExistsInDb = repo.CustomerExistsById(customerId);
 
-        // Update cache (safe even if not present)
         bool removedFromCache = cache.CustomersById.Remove(customerId);
 
-        // Also remove from email dictionary if we can find it
-        // (simple scan is fine for boilerplate)
         string? emailKey = null;
         foreach (var kv in cache.CustomersByEmail)
         {
@@ -303,7 +288,6 @@ public static void PrintCacheCounts(Cache cache)
         if (emailKey != null)
             cache.CustomersByEmail.Remove(emailKey);
 
-        // Remove orders dictionary entry (customer->orders) and items for those orders
         if (cache.OrdersByCustomerId.TryGetValue(customerId, out var orders))
         {
             cache.OrdersByCustomerId.Remove(customerId);
